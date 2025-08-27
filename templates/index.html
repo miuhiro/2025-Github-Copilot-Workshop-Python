@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ポモドーロタイマー</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .timer-container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            max-width: 400px;
+            width: 90%;
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 30px;
+            font-weight: 300;
+            font-size: 2.5em;
+        }
+        
+        .timer-display {
+            position: relative;
+            margin: 30px auto;
+            width: 200px;
+            height: 200px;
+        }
+        
+        .progress-ring {
+            transform: rotate(-90deg);
+        }
+        
+        .progress-ring__circle {
+            stroke: #e6e6e6;
+            stroke-width: 8;
+            fill: transparent;
+        }
+        
+        .progress-ring__progress {
+            stroke: #667eea;
+            stroke-width: 8;
+            fill: transparent;
+            stroke-linecap: round;
+            stroke-dasharray: 565.48;
+            stroke-dashoffset: 0;
+            transition: stroke-dashoffset 1s linear;
+        }
+        
+        .timer-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 2.5em;
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .controls {
+            margin-top: 30px;
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+        }
+        
+        button {
+            padding: 15px 30px;
+            font-size: 1.1em;
+            font-weight: 600;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            min-width: 120px;
+        }
+        
+        .start-btn {
+            background: #667eea;
+            color: white;
+        }
+        
+        .start-btn:hover {
+            background: #5a67d8;
+            transform: translateY(-2px);
+        }
+        
+        .start-btn:disabled {
+            background: #a0aec0;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .reset-btn {
+            background: #e53e3e;
+            color: white;
+        }
+        
+        .reset-btn:hover {
+            background: #c53030;
+            transform: translateY(-2px);
+        }
+        
+        .status {
+            margin-top: 20px;
+            font-size: 1.2em;
+            color: #666;
+            font-weight: 500;
+        }
+    </style>
+</head>
+<body>
+    <div class="timer-container">
+        <h1>ポモドーロタイマー</h1>
+        
+        <div class="timer-display">
+            <svg class="progress-ring" width="200" height="200">
+                <circle
+                    class="progress-ring__circle"
+                    stroke-width="8"
+                    fill="transparent"
+                    r="90"
+                    cx="100"
+                    cy="100"/>
+                <circle
+                    class="progress-ring__progress"
+                    stroke-width="8"
+                    fill="transparent"
+                    r="90"
+                    cx="100"
+                    cy="100"/>
+            </svg>
+            <div class="timer-text" id="timer-display">25:00</div>
+        </div>
+        
+        <div class="controls">
+            <button class="start-btn" id="start-btn" onclick="toggleTimer()">開始</button>
+            <button class="reset-btn" id="reset-btn" onclick="resetTimer()">リセット</button>
+        </div>
+        
+        <div class="status" id="status">準備完了</div>
+    </div>
+
+    <script>
+        let timerInterval = null;
+        let isRunning = false;
+        let timeLeft = 25 * 60; // 25分を秒に変換
+        const totalTime = 25 * 60;
+        
+        const timerDisplay = document.getElementById('timer-display');
+        const startBtn = document.getElementById('start-btn');
+        const resetBtn = document.getElementById('reset-btn');
+        const status = document.getElementById('status');
+        const progressCircle = document.querySelector('.progress-ring__progress');
+        
+        // 円周の計算（r=90の円周）
+        const circumference = 2 * Math.PI * 90;
+        progressCircle.style.strokeDasharray = circumference;
+        progressCircle.style.strokeDashoffset = 0;
+        
+        function formatTime(seconds) {
+            const minutes = Math.floor(seconds / 60);
+            const remainingSeconds = seconds % 60;
+            return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
+        }
+        
+        function updateProgress() {
+            const progress = (totalTime - timeLeft) / totalTime;
+            const offset = circumference * progress;
+            progressCircle.style.strokeDashoffset = offset;
+        }
+        
+        function updateDisplay() {
+            timerDisplay.textContent = formatTime(timeLeft);
+            updateProgress();
+        }
+        
+        function toggleTimer() {
+            if (isRunning) {
+                // タイマーを停止
+                clearInterval(timerInterval);
+                isRunning = false;
+                startBtn.textContent = '開始';
+                status.textContent = '一時停止中';
+            } else {
+                // タイマーを開始
+                if (timeLeft <= 0) {
+                    timeLeft = totalTime;
+                }
+                
+                isRunning = true;
+                startBtn.textContent = '停止';
+                status.textContent = '実行中...';
+                
+                timerInterval = setInterval(() => {
+                    timeLeft--;
+                    updateDisplay();
+                    
+                    if (timeLeft <= 0) {
+                        // タイマー終了
+                        clearInterval(timerInterval);
+                        isRunning = false;
+                        startBtn.textContent = '開始';
+                        status.textContent = '完了！';
+                        
+                        // 効果音やアラートを追加する場合はここ
+                        alert('ポモドーロタイマーが終了しました！');
+                    }
+                }, 1000);
+            }
+        }
+        
+        function resetTimer() {
+            clearInterval(timerInterval);
+            isRunning = false;
+            timeLeft = totalTime;
+            startBtn.textContent = '開始';
+            status.textContent = '準備完了';
+            updateDisplay();
+        }
+        
+        // 初期表示の更新
+        updateDisplay();
+    </script>
+</body>
+</html>
